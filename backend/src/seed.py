@@ -16,7 +16,12 @@ import core
 CFG = core.load_config()
 BBOX = tuple(float(x) for x in os.environ.get("BBOX", "17.30,78.30,17.56,78.60").split(","))
 POINTS = boto3.resource("dynamodb").Table(os.environ.get("POINTS_TABLE", "points"))
-OVERPASS = os.environ.get("OVERPASS_URL", "https://overpass-api.de/api/interpreter")
+# Public Overpass servers are often overloaded; try each in turn.
+OVERPASS = [u for u in os.environ.get("OVERPASS_URL", "").split(",") if u] or [
+    "https://overpass-api.de/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+]
 
 KINDS = {
     ("amenity", "drinking_water"): "water",
@@ -39,9 +44,15 @@ def query(bbox):
 
 def fetch(bbox):
     data = urllib.parse.urlencode({"data": query(bbox)}).encode()
-    req = urllib.request.Request(OVERPASS, data=data, headers={"User-Agent": "heatshield-hackathon/1.0"})
-    with urllib.request.urlopen(req, timeout=120) as r:
-        return json.loads(r.read())["elements"]
+    errors = []
+    for url in OVERPASS:
+        req = urllib.request.Request(url, data=data, headers={"User-Agent": "heatshield-hackathon/1.0"})
+        try:
+            with urllib.request.urlopen(req, timeout=50) as r:
+                return json.loads(r.read())["elements"], None
+        except Exception as e:  # try the next server
+            errors.append(f"{url}: {e}")
+    return [], "; ".join(errors)
 
 
 def to_point(el):
@@ -58,7 +69,8 @@ def to_point(el):
 
 def handler(event, _context):
     event = event or {}
-    points = [p for p in (to_point(e) for e in fetch(BBOX)) if p]
+    elements, osm_error = ([], None) if event.get("skipOsm") else fetch(BBOX)
+    points = [p for p in (to_point(e) for e in elements) if p]
     for i, x in enumerate(event.get("extra", [])):
         points.append({"pointId": f"manual-{i}", "lat": x["lat"], "lon": x["lon"], "kind": x["kind"],
                        "name": x.get("name", ""), "source": "team-verified", "verified": True,
@@ -69,4 +81,7 @@ def handler(event, _context):
     counts = {}
     for p in points:
         counts[p["kind"]] = counts.get(p["kind"], 0) + 1
-    return {"seeded": len(points), "byKind": counts}
+    out = {"seeded": len(points), "byKind": counts}
+    if osm_error:
+        out["osmError"] = osm_error  # extra points were still written
+    return out

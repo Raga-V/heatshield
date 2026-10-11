@@ -13,6 +13,8 @@ Delivery riders spend the hottest hours of an Indian summer outdoors, are paid p
 
 **Design principle: breaks cost riders money, so we design for breaks that cost nothing.**
 
+**Live on AWS:** [main.ddakflc0z915m.amplifyapp.com](https://main.ddakflc0z915m.amplifyapp.com) · demo ride on a real heatwave day: [/?demo=1&replay=1](https://main.ddakflc0z915m.amplifyapp.com/?demo=1&replay=1) · API: [`/config`](https://7jclw42y48.execute-api.ap-south-1.amazonaws.com/config)
+
 ## Architecture
 
 ```mermaid

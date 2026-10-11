@@ -172,5 +172,16 @@ class GridTests(unittest.TestCase):
         self.assertEqual(idx["replay"]["2024-05-03"]["R2024-05-03T14"]["red"], 3)
 
 
+class SeedTests(unittest.TestCase):
+    def test_overpass_down_still_writes_extra_points(self):
+        import seed
+        fake_aws.TABLES.clear()
+        seed.OVERPASS = ["http://127.0.0.1:9/unreachable"]
+        r = seed.handler({"extra": [{"lat": 17.44, "lon": 78.45, "kind": "water", "name": "Test tap"}]}, None)
+        self.assertEqual(r["seeded"], 1)
+        self.assertIn("osmError", r)
+        self.assertIn(("manual-0",), seed.POINTS.items)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

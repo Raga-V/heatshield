@@ -11,7 +11,8 @@ REPLAY_DATE=${REPLAY_DATE:-2024-05-03}
 BBOX=${BBOX:-17.30,78.30,17.56,78.60}
 CITY=${CITY:-hyderabad}
 APP_NAME=${APP_NAME:-heatshield}
-PY=$(command -v python3 || command -v python)
+# on Windows "python3" can be the Microsoft Store stub, so pick the first one that actually runs
+PY=$(for p in python3 python; do "$p" -c "" >/dev/null 2>&1 && { command -v "$p"; break; }; done)
 SAM=$(command -v sam || command -v sam.cmd)
 TMP=$(mktemp -d)
 
@@ -39,8 +40,12 @@ echo "== 2/6 forecast grid"
 invoke "$GRID_FN" '{"mode":"forecast"}'
 echo "== 3/6 replay grid for $REPLAY_DATE"
 invoke "$GRID_FN" "{\"mode\":\"replay\",\"date\":\"$REPLAY_DATE\"}"
-echo "== 4/6 seed water/shade/fuel points from OpenStreetMap"
-invoke "$SEED_FN" '{}'
+echo "== 4/6 seed water/shade/fuel points from OpenStreetMap (+ 4 labelled demo points near the city centre)"
+invoke "$SEED_FN" '{"extra":[
+  {"lat":17.3850,"lon":78.4867,"kind":"water","name":"Water point (demo)"},
+  {"lat":17.3900,"lon":78.4800,"kind":"fuel","name":"Fuel station (demo)"},
+  {"lat":17.4000,"lon":78.4900,"kind":"shade","name":"Bus shelter (demo)"},
+  {"lat":17.3780,"lon":78.4950,"kind":"water","name":"Water point (demo)"}]}'
 
 echo "== 5/6 web bundle"
 LOC_KEY=${LOCATION_API_KEY:-}
