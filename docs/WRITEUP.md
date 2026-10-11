@@ -38,7 +38,7 @@ The stack runs within the free tier.
 
 ## Engineering choices
 
-- **Replay mode.** Our October demo replays a real May heatwave day from Open-Meteo's archive, so judges see the system under real conditions rather than mild October weather.
+- **Replay mode.** Our October demo replays a real heatwave day from Open-Meteo's archive, so judges see the system under real conditions rather than mild October weather. On 3 May 2024 Hyderabad reached 40.4 °C; our outdoor WBGT estimate was in the red band from 10:00 to 16:00 and peaked at 33.8 °C at 13:00, the hour the demo ride starts.
 - **Cheap per ping.** A ping becomes a grid lookup by arithmetic (no geo database), one point query and two writes.
 - **Rules in config, logic in pure functions.** Thresholds sit in `config.json`; dose and nudge rules have unit tests plus an end-to-end test that replays a scripted ride and checks the nudge order.
 - **Cached audio, so no data is used per nudge.** Riders report that phones overheat and shut down, so we keep the app light. If a clip cannot play, the phone's speech engine says the same line.
