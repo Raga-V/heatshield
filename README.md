@@ -8,7 +8,7 @@ Delivery riders spend the hottest hours of an Indian summer outdoors, are paid p
 | --- | --- | --- |
 | **Idle** | Waiting for an order, heat dose building, shade or water within 300 m | Shade and water are close by while you wait |
 | **On route** | Riding, dose high, a water point within 500 m *in the direction of travel* | Water point just ahead on your route |
-| **Critical** | Dose at the limit, or the rider taps *I feel unwell* | Stop now; nearest rest point plus first-aid steps |
+| **Critical** | Dose at the limit, or the rider taps *I feel unwell* (works any time, even offline) | Stop now; nearest rest point plus first-aid steps |
 | **Break logged** | 10+ minutes stopped at a water or rest point | Break logged (the dose then recovers) |
 
 **Design principle: breaks cost riders money, so we design for breaks that cost nothing.**
@@ -36,9 +36,10 @@ flowchart LR
 - **Replay mode:** the same Lambda rebuilds any past day from Open-Meteo's archive, so the October demo can replay a real May heatwave afternoon. `{"mode":"scan"}` finds the hottest days for your city.
 - **Heat dose (`core.py`):** each ping adds `minutes × band weight` (yellow 1, red 2); gaps are capped at 2 min; a break at a rest point recovers 2/min. Stationary, heading and break detection are pure functions with unit tests.
 - **Water points:** seeded from OpenStreetMap (`amenity=drinking_water`, `fuel`, `toilets`, `shelter`) and crowdsourced by riders (one rider adds, a second confirms).
-- **Voice:** Polly synthesises each clip once, caches it in S3, and the app plays it from memory. The app uses no data per nudge, which matters on phones that overheat.
+- **Voice:** Polly synthesises each clip once, caches it in S3, and the app plays it from memory. The app uses no data per nudge, which matters on phones that overheat. If a clip cannot play, the phone's own speech engine reads the same line.
+- **Shift record:** at the end of a shift the rider gets minutes in red zones, breaks and peak WBGT, and can share it with one tap (to a union, a platform, or WhatsApp).
 
-AWS services: **Amplify Hosting, API Gateway, Lambda, EventBridge Scheduler, DynamoDB, S3, Polly**, deployed with **AWS SAM** (open source). Optional: **Amazon Location Service** map tiles (set `LOCATION_API_KEY`).
+AWS services: **Amplify Hosting, API Gateway (throttled), Lambda, EventBridge Scheduler, DynamoDB, S3, Polly**, deployed with **AWS SAM** (open source) in one command. Optional: **Amazon Location Service** map tiles (set `LOCATION_API_KEY`).
 
 ## Run it
 
@@ -49,9 +50,12 @@ python3 backend/tests/test_heatshield.py
 # local UI with fake AWS
 python3 scripts/local_server.py      # open http://localhost:8787/?demo=1&replay=1
 
-# deploy to AWS (needs AWS CLI v2 + SAM CLI)
+# deploy everything to AWS: stack, heat grid, water points, and the web app on Amplify Hosting
+# (needs AWS CLI v2 configured + SAM CLI; on Windows run it from Git Bash)
 REPLAY_DATE=2024-05-03 ./scripts/deploy.sh
 ```
+
+On Windows, use `python` instead of `python3`. The deploy script prints the Amplify URL at the end.
 
 Pick a real replay date for your city first:
 
@@ -75,7 +79,7 @@ backend/src/seed.py         OpenStreetMap water and rest points
 backend/src/config.json     every threshold, in one place
 backend/tests/              unit + end-to-end tests with an in-memory AWS fake
 web/                        rider app (plain JS + MapLibre, no build step)
-scripts/deploy.sh           build, deploy, warm data, bundle web for Amplify
+scripts/deploy.sh           deploy stack, warm data, publish web app to Amplify Hosting
 scripts/local_server.py     offline UI development
 ```
 
@@ -84,8 +88,12 @@ scripts/local_server.py     offline UI development
 - **WBGT is estimated, not measured.** We use the Australian Bureau of Meteorology shade approximation plus a capped direct-sun allowance (up to +3 °C at 1000 W/m²). Cells are ~2 km, so street-level hotspots are missed.
 - **Thresholds are assumptions,** not clinical limits; they live in `config.json` for an occupational-health expert to set.
 - **The web app tracks only while the screen is on** (we hold a wake lock). A production build would be a native app with background location.
-- **No authentication:** riders get an anonymous ID and we store no names or phone numbers. Production needs Cognito and rate limits.
+- **No authentication:** riders get an anonymous ID and we store no names or phone numbers. The API is throttled at API Gateway; production needs Cognito.
 - OpenStreetMap water-point coverage in Indian cities is patchy; crowdsourcing fills the gap.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
 
 ## AI tools used
 

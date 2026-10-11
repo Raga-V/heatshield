@@ -17,8 +17,9 @@ A phone web app that runs during a shift and stays quiet until a break is nearly
    - *On route:* a water point within 500 m in your direction of travel. No detour, so no lost income.
    - *Critical:* only at the dose limit, or when the rider taps "I feel unwell", with first-aid steps.
 4. **Automatic break detection.** Ten minutes stopped at a water or rest point counts as a break; the dose recovers.
-5. **Shift summary:** minutes in red zones, breaks taken, the hottest WBGT, the route. This gives riders evidence to show a union or platform when asking for paid heat breaks.
+5. **Shift summary:** minutes in red zones, breaks taken, the hottest WBGT, the route. One tap shares it, so riders have evidence to show a union or platform when asking for paid heat breaks.
 6. **Crowdsourced water points:** a rider long-presses to add one, and a second rider confirms it.
+7. **"I feel unwell" always works:** first-aid steps and the 108 ambulance number appear even with no shift running, no GPS fix or no network.
 
 ## Where AWS fits
 
@@ -29,9 +30,9 @@ A phone web app that runs during a shift and stays quiet until a break is nearly
 | DynamoDB | Heat cells by hour, shifts, pings, water points (GSI by grid cell for nearby lookup) |
 | S3 | Hourly GeoJSON heat layers; Polly audio cache |
 | Amazon Polly | Hindi and English voice nudges, generated once and cached |
-| API Gateway (HTTP API) | The app's single backend |
+| API Gateway (HTTP API) | The app's single backend, throttled because riders are anonymous |
 | Amplify Hosting | Serves the app over HTTPS, which browsers require for location |
-| AWS SAM (open source) | The whole stack as code, deployed with one command |
+| AWS SAM (open source) | The whole stack as code; one script deploys it, loads the data and publishes the app |
 
 The stack runs within the free tier.
 
@@ -40,7 +41,8 @@ The stack runs within the free tier.
 - **Replay mode.** Our October demo replays a real May heatwave day from Open-Meteo's archive, so judges see the system under real conditions rather than mild October weather.
 - **Cheap per ping.** A ping becomes a grid lookup by arithmetic (no geo database), one point query and two writes.
 - **Rules in config, logic in pure functions.** Thresholds sit in `config.json`; dose and nudge rules have unit tests plus an end-to-end test that replays a scripted ride and checks the nudge order.
-- **Cached audio, so no data is used per nudge.** Riders report that phones overheat and shut down, so we keep the app light.
+- **Cached audio, so no data is used per nudge.** Riders report that phones overheat and shut down, so we keep the app light. If a clip cannot play, the phone's speech engine says the same line.
+- **Safety path has no dependencies.** The first-aid card is built into the app, so it never waits on the network.
 
 ## Limitations and next steps
 

@@ -5,10 +5,10 @@ Find the exact submission cut-off on Discord or in your email **first**, then wo
 | Block | Who | Do | Done when |
 | --- | --- | --- | --- |
 | 0:00–0:15 | All | Create the public GitHub repo, add this code, commit as yourselves, push. Read `core.py` together so everyone can explain it in an interview. | Repo public, first commit today |
-| 0:00–0:45 | A | Install AWS CLI v2 + SAM CLI, `aws configure`, set a $10 budget alert. Run `./scripts/deploy.sh`. | `curl <ApiUrl>/config` returns JSON |
+| 0:00–0:45 | A | Install AWS CLI v2 + SAM CLI, `aws configure`, set a $10 budget alert. Run `./scripts/deploy.sh` (Git Bash on Windows). It also publishes the app to Amplify. | `curl <ApiUrl>/config` returns JSON; script prints the Amplify URL |
 | 0:15–0:45 | B | `python3 backend/tests/test_heatshield.py` and `python3 scripts/local_server.py`; click through the app at `/?demo=1&replay=1` and note any UI bugs | All 9 tests pass, demo ride runs locally |
 | 0:45–1:00 | A | Run the `scan` mode, pick the hottest real day, redeploy with that `REPLAY_DATE` | Replay map shows red cells |
-| 1:00–1:20 | C | Amplify console → Create app → Deploy without Git → drag `web.zip`. Open on a real phone. | App loads on the phone over HTTPS |
+| 1:00–1:20 | C | Open the Amplify URL the deploy script printed on a real phone. (Manual fallback: Amplify console → Deploy without Git → drag `web.zip`.) | App loads on the phone over HTTPS |
 | 1:20–1:40 | C, D | On the phone: start a real shift for 3 minutes (gauge moves), add one water point, run the demo ride | Everything works on the deployed URL |
 | 1:40–3:00 | D (+B) | Record the video (see `DEMO_VIDEO.md`). Screen-record the phone; record AWS console clips. | Under 3:00, uploaded to YouTube as unlisted |
 | 3:00–3:30 | D | Paste `WRITEUP.md` into the form; publish it as a Builder Center blog post too (*optional*, AirPods) | Writeup final |
