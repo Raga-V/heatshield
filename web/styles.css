@@ -1,0 +1,100 @@
+:root {
+  --ink: #14110f;
+  --paper: #f6f1e7;
+  --card: #fffdf8;
+  --line: #d9cfbd;
+  --muted: #6b6257;
+  --green: #2f8f4e;
+  --yellow: #e0a100;
+  --red: #d7301f;
+  --water: #1f6fd1;
+  --radius: 14px;
+  font-family: "Archivo", "Noto Sans Devanagari", system-ui, sans-serif;
+  color: var(--ink);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--paper); overflow: hidden; }
+body[lang="hi"] { font-family: "Noto Sans Devanagari", "Archivo", system-ui, sans-serif; }
+#map { position: absolute; inset: 0; }
+
+.topbar {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 5;
+  display: flex; align-items: center; gap: 10px;
+  padding: calc(env(safe-area-inset-top) + 10px) 12px 10px;
+  background: linear-gradient(var(--paper) 70%, transparent);
+}
+.brand { font-weight: 800; font-size: 20px; letter-spacing: -0.02em; display: flex; align-items: center; gap: 6px; }
+.brand .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 3px #f2c4bd; }
+.forecast { display: flex; gap: 4px; flex: 1; overflow-x: auto; }
+.fc { flex: 0 0 auto; border-radius: 8px; padding: 3px 7px; font-size: 12px; font-weight: 700; color: #fff; }
+.fc.green { background: var(--green); } .fc.yellow { background: var(--yellow); color: var(--ink); } .fc.red { background: var(--red); }
+.chip { border: 2px solid var(--ink); background: var(--card); border-radius: 999px; padding: 6px 12px; font: inherit; font-weight: 700; }
+
+.replay-badge {
+  position: absolute; top: calc(env(safe-area-inset-top) + 56px); left: 12px; z-index: 5;
+  background: var(--ink); color: #fff; font-size: 12px; font-weight: 700; padding: 4px 9px; border-radius: 6px;
+}
+
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 6;
+  background: var(--card); border-top: 3px solid var(--ink);
+  border-radius: 18px 18px 0 0; padding: 14px 16px calc(env(safe-area-inset-bottom) + 12px);
+  max-width: 560px; margin: 0 auto;
+}
+.gauge-row { display: flex; justify-content: space-between; align-items: end; }
+.label { font-size: 13px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.level { font-size: 30px; font-weight: 800; line-height: 1.05; }
+.band-chip { font-weight: 800; padding: 6px 12px; border-radius: 10px; background: var(--line); }
+.band-chip.green { background: var(--green); color: #fff; } .band-chip.yellow { background: var(--yellow); } .band-chip.red { background: var(--red); color: #fff; }
+.gauge { height: 18px; border: 2px solid var(--ink); border-radius: 999px; margin: 10px 0 12px; overflow: hidden; background: #efe8da; }
+.gauge-fill { height: 100%; width: 0; background: var(--green); transition: width .6s ease, background .6s; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.stats div { display: flex; flex-direction: column; }
+.stats b { font-size: 24px; font-weight: 800; }
+.stats span { font-size: 12px; color: var(--muted); }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn {
+  flex: 1; min-height: 52px; border: 2px solid var(--ink); border-radius: var(--radius);
+  background: var(--card); font: inherit; font-weight: 800; font-size: 17px; color: var(--ink);
+  display: inline-flex; align-items: center; justify-content: center; text-decoration: none; padding: 0 14px; cursor: pointer;
+}
+.btn.primary { background: var(--ink); color: #fff; }
+.btn.danger { border-color: var(--red); color: var(--red); }
+.btn.wide { width: 100%; margin-top: 14px; }
+.btn:disabled { opacity: .5; }
+.hint { font-size: 12px; color: var(--muted); margin: 10px 0 0; }
+
+.nudge {
+  position: absolute; z-index: 8; left: 12px; right: 12px; top: calc(env(safe-area-inset-top) + 64px);
+  max-width: 536px; margin: 0 auto; background: var(--card); border: 3px solid var(--ink);
+  border-radius: 18px; padding: 16px; box-shadow: 0 10px 0 var(--ink);
+  animation: drop .3s ease-out;
+}
+@keyframes drop { from { transform: translateY(-16px); opacity: 0; } }
+.nudge.critical, .nudge.unwell { border-color: var(--red); box-shadow: 0 10px 0 var(--red); }
+.nudge-kind { font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.nudge-text { font-size: 20px; font-weight: 800; margin: 6px 0 8px; line-height: 1.25; }
+.nudge-point { font-size: 15px; font-weight: 700; color: var(--water); margin-bottom: 12px; }
+.first-aid { margin: 0 0 12px; padding-left: 20px; font-weight: 600; }
+
+.overlay { position: fixed; inset: 0; z-index: 20; background: rgba(20, 17, 15, .55); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.card { background: var(--card); border: 3px solid var(--ink); border-radius: 20px; padding: 20px; width: 100%; max-width: 420px; }
+.card h1 { margin: 0 0 6px; font-size: 32px; letter-spacing: -0.03em; }
+.card h2 { margin: 0 0 12px; }
+.card label { display: block; font-weight: 800; margin: 14px 0 6px; }
+.seg { display: flex; gap: 8px; }
+.seg button { flex: 1; min-height: 48px; border: 2px solid var(--ink); border-radius: 12px; background: var(--card); font: inherit; font-weight: 700; font-size: 16px; }
+.seg button.on { background: var(--ink); color: #fff; }
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.summary-grid div { border: 2px solid var(--line); border-radius: 12px; padding: 10px; }
+.summary-grid b { display: block; font-size: 26px; }
+
+.demo {
+  position: absolute; z-index: 7; right: 12px; top: calc(env(safe-area-inset-top) + 56px);
+  background: var(--card); border: 2px solid var(--ink); border-radius: 12px; padding: 8px 10px;
+  display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 700; max-width: 220px;
+}
+.demo .btn { min-height: 38px; font-size: 14px; }
+.toast { position: absolute; z-index: 30; left: 50%; bottom: 280px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 14px; border-radius: 10px; font-weight: 700; max-width: 90vw; }
+.rider-dot { width: 22px; height: 22px; border-radius: 50%; background: var(--ink); border: 4px solid #fff; box-shadow: 0 0 0 2px var(--ink); }
+.maplibregl-ctrl-attrib { font-size: 10px; }

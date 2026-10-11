@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#14110f">
+  <title>HeatShield</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Noto+Sans+Devanagari:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="map" aria-label="Heat map"></div>
+
+  <header class="topbar">
+    <div class="brand"><span class="dot"></span>HeatShield</div>
+    <div id="forecast" class="forecast" aria-live="polite"></div>
+    <button id="langBtn" class="chip" type="button">हिंदी</button>
+  </header>
+
+  <div id="replayBadge" class="replay-badge" hidden></div>
+
+  <section id="sheet" class="sheet">
+    <div class="gauge-row">
+      <div>
+        <div class="label" data-i18n="heat">Heat load</div>
+        <div id="levelWord" class="level">—</div>
+      </div>
+      <div id="bandChip" class="band-chip">—</div>
+    </div>
+    <div class="gauge" role="meter" aria-valuemin="0" aria-valuemax="100" id="gaugeMeter">
+      <div id="gaugeFill" class="gauge-fill"></div>
+    </div>
+    <div class="stats">
+      <div><b id="redMin">0</b><span data-i18n="redMin">min in red</span></div>
+      <div><b id="breaks">0</b><span data-i18n="breaks">breaks</span></div>
+      <div><b id="wbgt">—</b><span>WBGT °C</span></div>
+    </div>
+    <div class="actions">
+      <button id="startBtn" class="btn primary" type="button" data-i18n="start">Start shift</button>
+      <button id="endBtn" class="btn" type="button" data-i18n="end" hidden>End shift</button>
+      <button id="unwellBtn" class="btn danger" type="button" data-i18n="unwell" hidden>I feel unwell</button>
+    </div>
+    <p class="hint" data-i18n="hint">Long-press the map to add water or shade.</p>
+  </section>
+
+  <aside id="nudge" class="nudge" hidden role="alert">
+    <div class="nudge-kind" id="nudgeKind"></div>
+    <p class="nudge-text" id="nudgeText"></p>
+    <div class="nudge-point" id="nudgePoint"></div>
+    <ul id="firstAid" class="first-aid" hidden></ul>
+    <div class="actions">
+      <a id="nudgeGo" class="btn primary" target="_blank" rel="noopener" data-i18n="go">Directions</a>
+      <button id="nudgeClose" class="btn" type="button" data-i18n="ok">OK</button>
+    </div>
+  </aside>
+
+  <div id="onboard" class="overlay" hidden>
+    <div class="card">
+      <h1>HeatShield</h1>
+      <p data-i18n="why">Know when the heat is too much, and where the nearest water is. We use your location only during a shift.</p>
+      <label data-i18n="language">Language</label>
+      <div class="seg" id="langSeg">
+        <button type="button" data-v="hi">हिंदी</button><button type="button" data-v="en">English</button>
+      </div>
+      <label data-i18n="vehicle">Vehicle</label>
+      <div class="seg" id="vehSeg">
+        <button type="button" data-v="bike" data-i18n="bike">Motorbike</button><button type="button" data-v="cycle" data-i18n="cycle">Bicycle</button>
+      </div>
+      <button id="onboardGo" class="btn primary wide" type="button" data-i18n="continue">Continue</button>
+    </div>
+  </div>
+
+  <div id="summary" class="overlay" hidden>
+    <div class="card">
+      <h2 data-i18n="summary">Shift summary</h2>
+      <div class="summary-grid" id="summaryGrid"></div>
+      <p class="hint" data-i18n="summaryHint">Your record of heat exposure. Share it with your union or platform when asking for paid heat breaks.</p>
+      <button id="summaryClose" class="btn primary wide" type="button" data-i18n="ok">OK</button>
+    </div>
+  </div>
+
+  <div id="addPoint" class="overlay" hidden>
+    <div class="card">
+      <h2 data-i18n="addTitle">Add a point here?</h2>
+      <div class="seg" id="kindSeg">
+        <button type="button" data-v="water" data-i18n="water">Water</button>
+        <button type="button" data-v="shade" data-i18n="shade">Shade</button>
+        <button type="button" data-v="rest" data-i18n="rest">Rest stop</button>
+      </div>
+      <div class="actions">
+        <button id="addCancel" class="btn" type="button" data-i18n="cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="demo" class="demo" hidden>
+    <label><input type="checkbox" id="replayToggle"> Replay heatwave day <span id="replayDateLbl"></span></label>
+    <button id="demoRide" class="btn" type="button">Run demo ride</button>
+    <span id="demoStatus"></span>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+  <audio id="player" preload="auto"></audio>
+
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

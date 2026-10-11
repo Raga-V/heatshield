@@ -1,0 +1,157 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: HeatShield - heat-safety companion for delivery riders (Environmental Hacks 2026)
+
+Parameters:
+  CityName:
+    Type: String
+    Default: hyderabad
+  BBox:
+    Type: String
+    Default: "17.30,78.30,17.56,78.60"
+    Description: south,west,north,east of the city
+  ReplayDate:
+    Type: String
+    Default: "2024-05-03"
+    Description: Past heatwave day used for replay mode (find one with the scan mode)
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Architectures: [arm64]
+    MemorySize: 512
+    Timeout: 30
+    CodeUri: backend/src/
+    Environment:
+      Variables:
+        CITY_NAME: !Ref CityName
+        BBOX: !Ref BBox
+        REPLAY_DATE: !Ref ReplayDate
+        GRID_TABLE: !Ref GridTable
+        SHIFTS_TABLE: !Ref ShiftsTable
+        PINGS_TABLE: !Ref PingsTable
+        POINTS_TABLE: !Ref PointsTable
+        DATA_BUCKET: !Ref DataBucket
+
+Resources:
+  GridTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: cellId, AttributeType: S }
+        - { AttributeName: hourKey, AttributeType: S }
+      KeySchema:
+        - { AttributeName: cellId, KeyType: HASH }
+        - { AttributeName: hourKey, KeyType: RANGE }
+      TimeToLiveSpecification: { AttributeName: expiresAt, Enabled: true }
+
+  ShiftsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: riderId, AttributeType: S }
+        - { AttributeName: shiftId, AttributeType: S }
+      KeySchema:
+        - { AttributeName: riderId, KeyType: HASH }
+        - { AttributeName: shiftId, KeyType: RANGE }
+
+  PingsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: shiftId, AttributeType: S }
+        - { AttributeName: ts, AttributeType: N }
+      KeySchema:
+        - { AttributeName: shiftId, KeyType: HASH }
+        - { AttributeName: ts, KeyType: RANGE }
+      TimeToLiveSpecification: { AttributeName: expiresAt, Enabled: true }
+
+  PointsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: pointId, AttributeType: S }
+        - { AttributeName: cellId, AttributeType: S }
+      KeySchema:
+        - { AttributeName: pointId, KeyType: HASH }
+      GlobalSecondaryIndexes:
+        - IndexName: byCell
+          KeySchema:
+            - { AttributeName: cellId, KeyType: HASH }
+          Projection: { ProjectionType: ALL }
+
+  DataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins: ["*"]
+        AllowMethods: [GET, POST, OPTIONS]
+        AllowHeaders: [content-type]
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: api.handler
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref GridTable }
+        - DynamoDBCrudPolicy: { TableName: !Ref ShiftsTable }
+        - DynamoDBCrudPolicy: { TableName: !Ref PingsTable }
+        - DynamoDBCrudPolicy: { TableName: !Ref PointsTable }
+        - S3CrudPolicy: { BucketName: !Ref DataBucket }
+        - Statement:
+            - Effect: Allow
+              Action: polly:SynthesizeSpeech
+              Resource: "*"
+      Events:
+        Proxy:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /{proxy+}
+            Method: ANY
+
+  GridFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: grid.handler
+      Timeout: 300
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref GridTable }
+        - S3CrudPolicy: { BucketName: !Ref DataBucket }
+      Events:
+        Hourly:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: "cron(5 * * * ? *)"
+            Input: '{"mode": "forecast"}'
+
+  SeedFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: seed.handler
+      Timeout: 180
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref PointsTable }
+
+Outputs:
+  ApiUrl:
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+  GridFunctionName:
+    Value: !Ref GridFunction
+  SeedFunctionName:
+    Value: !Ref SeedFunction
+  DataBucketName:
+    Value: !Ref DataBucket

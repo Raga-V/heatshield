@@ -1,0 +1,10 @@
+{
+  "name": "HeatShield",
+  "short_name": "HeatShield",
+  "description": "Heat-safety companion for delivery riders",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f6f1e7",
+  "theme_color": "#14110f",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

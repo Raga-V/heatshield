@@ -1,0 +1,37 @@
+{
+  "_note": "All thresholds are planning assumptions, not clinical limits. Tune them here; nothing is hard-coded.",
+  "cellDeg": 0.02,
+  "timezoneOffsetMin": 330,
+  "bands": {
+    "_source": "Moderate-work WBGT action levels in the spirit of ISO 7243 / ACGIH TLV tables. Verify against the published table before quoting.",
+    "yellowFromC": 28.0,
+    "redFromC": 31.0
+  },
+  "sunAdjustMaxC": 3.0,
+  "_sunAdjust": "Shade WBGT (Australian BoM approximation) plus up to sunAdjustMaxC for direct sun, scaled by shortwave radiation / 1000 W/m2. Approximate.",
+  "doseWeightPerMin": { "green": 0, "yellow": 1, "red": 2, "unknown": 0 },
+  "recoveryPerMin": 2,
+  "maxGapMin": 2,
+  "maxAccuracyM": 100,
+  "stationaryRadiusM": 50,
+  "movingIfStationaryUnderMin": 2,
+  "headingMinMoveM": 20,
+  "breakAfterMin": 10,
+  "breakRadiusM": 60,
+  "idleAfterMin": 3,
+  "idleDose": 30,
+  "idleRadiusM": 300,
+  "routeDose": 60,
+  "routeRadiusM": 500,
+  "routeMaxAngleDeg": 45,
+  "criticalDose": 120,
+  "nudgeCooldownMin": 15,
+  "criticalCooldownMin": 10,
+  "replayStartHour": 13,
+  "replayLastHour": 18,
+  "pointKinds": {
+    "idle": ["water", "shade", "rest", "fuel"],
+    "route": ["water", "rest", "fuel"],
+    "rest": ["water", "shade", "rest", "fuel", "toilets"]
+  }
+}

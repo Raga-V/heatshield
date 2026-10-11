@@ -1,0 +1,72 @@
+"""Seeds water / shade / fuel / toilet points for the city from OpenStreetMap (Overpass API).
+
+Event: {} uses the BBOX env var. Optional {"extra": [{"lat":..,"lon":..,"kind":"water","name":".."}]}
+adds hand-checked points (useful where OSM coverage is thin).
+"""
+import json
+import os
+import urllib.parse
+import urllib.request
+from decimal import Decimal
+
+import boto3
+
+import core
+
+CFG = core.load_config()
+BBOX = tuple(float(x) for x in os.environ.get("BBOX", "17.30,78.30,17.56,78.60").split(","))
+POINTS = boto3.resource("dynamodb").Table(os.environ.get("POINTS_TABLE", "points"))
+OVERPASS = os.environ.get("OVERPASS_URL", "https://overpass-api.de/api/interpreter")
+
+KINDS = {
+    ("amenity", "drinking_water"): "water",
+    ("amenity", "water_point"): "water",
+    ("amenity", "fuel"): "fuel",
+    ("amenity", "toilets"): "toilets",
+    ("amenity", "shelter"): "shade",
+}
+
+
+def query(bbox):
+    s, w, n, e = bbox
+    b = f"{s},{w},{n},{e}"
+    return (f'[out:json][timeout:90];('
+            f'node["amenity"="drinking_water"]({b});node["amenity"="water_point"]({b});'
+            f'node["amenity"="fuel"]({b});way["amenity"="fuel"]({b});'
+            f'node["amenity"="toilets"]({b});node["amenity"="shelter"]({b});'
+            f');out center tags;')
+
+
+def fetch(bbox):
+    data = urllib.parse.urlencode({"data": query(bbox)}).encode()
+    req = urllib.request.Request(OVERPASS, data=data, headers={"User-Agent": "heatshield-hackathon/1.0"})
+    with urllib.request.urlopen(req, timeout=120) as r:
+        return json.loads(r.read())["elements"]
+
+
+def to_point(el):
+    tags = el.get("tags", {})
+    kind = KINDS.get(("amenity", tags.get("amenity")))
+    lat = el.get("lat") or el.get("center", {}).get("lat")
+    lon = el.get("lon") or el.get("center", {}).get("lon")
+    if not kind or lat is None:
+        return None
+    return {"pointId": f"osm-{el['type']}-{el['id']}", "lat": lat, "lon": lon, "kind": kind,
+            "name": tags.get("name") or tags.get("brand") or "", "source": "osm", "verified": True,
+            "cellId": core.cell_id(lat, lon, CFG["cellDeg"])}
+
+
+def handler(event, _context):
+    event = event or {}
+    points = [p for p in (to_point(e) for e in fetch(BBOX)) if p]
+    for i, x in enumerate(event.get("extra", [])):
+        points.append({"pointId": f"manual-{i}", "lat": x["lat"], "lon": x["lon"], "kind": x["kind"],
+                       "name": x.get("name", ""), "source": "team-verified", "verified": True,
+                       "cellId": core.cell_id(x["lat"], x["lon"], CFG["cellDeg"])})
+    with POINTS.batch_writer(overwrite_by_pkeys=["pointId"]) as bw:
+        for p in points:
+            bw.put_item(Item=json.loads(json.dumps(p), parse_float=Decimal))
+    counts = {}
+    for p in points:
+        counts[p["kind"]] = counts.get(p["kind"], 0) + 1
+    return {"seeded": len(points), "byKind": counts}
