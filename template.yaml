@@ -96,6 +96,9 @@ Resources:
   HttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
+      DefaultRouteSettings:      # no auth yet, so cap abuse (and cost) at the edge
+        ThrottlingBurstLimit: 50
+        ThrottlingRateLimit: 20
       CorsConfiguration:
         AllowOrigins: ["*"]
         AllowMethods: [GET, POST, OPTIONS]

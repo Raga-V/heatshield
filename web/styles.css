@@ -83,6 +83,8 @@ body[lang="hi"] { font-family: "Noto Sans Devanagari", "Archivo", system-ui, san
 .card { background: var(--card); border: 3px solid var(--ink); border-radius: 20px; padding: 20px; width: 100%; max-width: 420px; }
 .card h1 { margin: 0 0 6px; font-size: 32px; letter-spacing: -0.03em; }
 .card h2 { margin: 0 0 12px; }
+.how { margin: 10px 0 4px; padding-left: 20px; font-weight: 600; font-size: 15px; line-height: 1.35; }
+.how li + li { margin-top: 4px; }
 .card label { display: block; font-weight: 800; margin: 14px 0 6px; }
 .seg { display: flex; gap: 8px; }
 .seg button { flex: 1; min-height: 48px; border: 2px solid var(--ink); border-radius: 12px; background: var(--card); font: inherit; font-weight: 700; font-size: 16px; }
