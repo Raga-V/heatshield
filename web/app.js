@@ -20,6 +20,18 @@
       sMinutes: "minutes on shift", sRed: "minutes in red zones", sBreaks: "breaks taken", sPeak: "hottest WBGT °C",
       added: "Point added. Another rider will confirm it.", locDenied: "Location is needed during a shift.",
       noApi: "API_URL is not set in config.js.",
+      share: "Share record", copied: "Copied. Paste it to your union or platform.",
+      shareText: (s) => `HeatShield shift record ${s.date}: ${s.minutes} min on shift, ${s.redMin} min in red heat zones (WBGT 31 °C+), ${s.breaks} breaks taken, hottest WBGT ${s.peak} °C.`,
+      say: {
+        "shift-start": "Shift started. Stay safe in the heat.",
+        idle: "You have been in the heat a while. Shade and water are close by while you wait.",
+        "on-route": "Water point just ahead on your route.",
+        critical: "Your heat level is very high. Stop now and rest at the nearest point.",
+        "break-logged": "Break logged. Good job.",
+        unwell: "Rest in shade, drink water, and call for help if you feel worse.",
+      },
+      firstAid: ["Move to shade and sit down", "Sip water slowly", "Loosen helmet and clothes, wet your skin",
+        "Call 108 if you feel confused, stop sweating or faint"],
     },
     hi: {
       heat: "गर्मी का असर", redMin: "मिनट लाल ज़ोन में", breaks: "ब्रेक", start: "शिफ्ट शुरू करें", end: "शिफ्ट खत्म करें",
@@ -34,6 +46,18 @@
       sMinutes: "मिनट शिफ्ट", sRed: "मिनट लाल ज़ोन में", sBreaks: "ब्रेक लिए", sPeak: "सबसे ज़्यादा WBGT °C",
       added: "जगह जुड़ गई। कोई और राइडर इसकी पुष्टि करेगा।", locDenied: "शिफ्ट के दौरान लोकेशन ज़रूरी है।",
       noApi: "config.js में API_URL नहीं है।",
+      share: "रिकॉर्ड भेजें", copied: "कॉपी हो गया। यूनियन या प्लेटफ़ॉर्म को भेजें।",
+      shareText: (s) => `HeatShield शिफ्ट रिकॉर्ड ${s.date}: ${s.minutes} मिनट शिफ्ट, ${s.redMin} मिनट लाल ज़ोन में (WBGT 31 °C+), ${s.breaks} ब्रेक, सबसे ज़्यादा WBGT ${s.peak} °C।`,
+      say: {
+        "shift-start": "शिफ्ट शुरू हो गई है। गर्मी में अपना ध्यान रखें।",
+        idle: "आप काफ़ी देर से गर्मी में हैं। ऑर्डर का इंतज़ार करते हुए पास में छाया और पानी है।",
+        "on-route": "आपके रास्ते में आगे पानी मिलेगा।",
+        critical: "गर्मी का असर बहुत ज़्यादा है। अभी रुकिए और पास की जगह पर आराम कीजिए।",
+        "break-logged": "ब्रेक दर्ज हो गया। बहुत बढ़िया।",
+        unwell: "छाया में बैठिए, पानी पीजिए, और तबीयत बिगड़े तो मदद बुलाइए।",
+      },
+      firstAid: ["छाया में जाकर बैठ जाइए", "धीरे-धीरे पानी पीजिए", "हेलमेट और कपड़े ढीले करें, त्वचा गीली करें",
+        "उलझन हो, पसीना बंद हो या चक्कर आए तो 108 पर कॉल करें"],
     },
   };
   const NUDGE_KIND = { idle: "kind_idle", "on-route": "kind_onroute", critical: "kind_critical", "break-logged": "kind_break", unwell: "kind_unwell" };
@@ -121,13 +145,14 @@
     const b = $("replayBadge");
     b.hidden = !hourKey.startsWith("R");
     if (!b.hidden) b.textContent = `Replay ${hourKey.slice(1, 11)} · ${hourKey.slice(-2)}:00`;
+    if (S.index) renderForecast();
   }
 
   function renderForecast() {
     const box = $("forecast");
     box.innerHTML = "";
     const hours = S.replay ? (S.index.replay || {})[S.server.replayDate] || {} : S.index.forecast || {};
-    Object.keys(hours).sort().slice(0, 4).forEach((k) => {
+    Object.keys(hours).sort().filter((k) => !S.hourKey || k >= S.hourKey).slice(0, 4).forEach((k) => {
       const h = hours[k];
       const band = h.red / h.cells > 0.3 ? "red" : (h.red + h.yellow) / h.cells > 0.3 ? "yellow" : "green";
       const el = document.createElement("span");
@@ -162,12 +187,19 @@
   }
   function play(clip) {
     const a = S.audio[S.lang + "/" + clip];
-    if (!a) return;
+    if (!a) return speak(clip);
     const p = $("player");
     p.src = a.url;
-    p.play().catch(() => {});
+    p.play().catch(() => speak(clip));
   }
-  function clipText(clip) { return (S.audio[S.lang + "/" + clip] || {}).text || ""; }
+  function speak(clip) {
+    if (!window.speechSynthesis) return;
+    const u = new SpeechSynthesisUtterance(clipText(clip));
+    u.lang = S.lang === "hi" ? "hi-IN" : "en-IN";
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  }
+  function clipText(clip) { return (S.audio[S.lang + "/" + clip] || {}).text || t("say")[clip] || ""; }
 
   // ------------------------------------------------------------ shift
   async function startShift(opts = {}) {
@@ -176,7 +208,7 @@
     const r = await api("/shifts/start", { riderId: S.riderId, lang: S.lang, vehicle: S.vehicle, ts: startTs,
       replayDate: S.replay ? S.server.replayDate : null });
     S.shift = { id: r.shiftId, startTs };
-    $("startBtn").hidden = true; $("endBtn").hidden = false; $("unwellBtn").hidden = false;
+    $("startBtn").hidden = true; $("endBtn").hidden = false;
     map.getSource("path").setData({ type: "FeatureCollection", features: [] });
     await preloadAudio();
     play("shift-start");
@@ -206,7 +238,7 @@
   }
 
   function renderGauge(r) {
-    const color = r.gauge >= 100 ? BAND_COLOR.red : r.gauge >= 50 ? BAND_COLOR.yellow : BAND_COLOR.green;
+    const color = { low: BAND_COLOR.green, moderate: BAND_COLOR.yellow, high: "#e8590c", critical: BAND_COLOR.red }[r.level] || BAND_COLOR.green;
     $("gaugeFill").style.width = Math.max(3, r.gauge) + "%";
     $("gaugeFill").style.background = color;
     $("gaugeMeter").setAttribute("aria-valuenow", r.gauge);
@@ -252,10 +284,15 @@
 
   async function unwell() {
     const p = S.lastPos || S.demoPos;
-    if (!p || !S.shift) return;
-    const r = await api("/shifts/unwell", { riderId: S.riderId, shiftId: S.shift.id, lat: p.lat, lon: p.lon, ts: S.demoTs || Date.now() });
-    renderGauge(r);
-    showNudge({ ...r.nudge, firstAid: r.firstAid }, p);
+    if (p && S.shift) {
+      try {
+        const r = await api("/shifts/unwell", { riderId: S.riderId, shiftId: S.shift.id, lat: p.lat, lon: p.lon, ts: S.demoTs || Date.now() });
+        renderGauge(r);
+        return showNudge({ ...r.nudge, firstAid: r.firstAid }, p);
+      } catch (e) { console.warn(e); }
+    }
+    // no shift, no GPS fix yet, or no network: first aid must still show
+    showNudge({ id: "unwell", point: null, firstAid: t("firstAid") }, p);
   }
 
   async function endShift() {
@@ -265,12 +302,14 @@
     try { S.wakeLock && S.wakeLock.release(); } catch { /* ignore */ }
     const s = await api("/shifts/end", { riderId: S.riderId, shiftId: S.shift.id });
     S.shift = null; S.demoRunning = false;
-    $("startBtn").hidden = false; $("endBtn").hidden = true; $("unwellBtn").hidden = true;
+    $("startBtn").hidden = false; $("endBtn").hidden = true;
     $("nudge").hidden = true;
     $("summaryGrid").innerHTML = [
       [s.minutes, t("sMinutes")], [s.redMin, t("sRed")], [s.breaks, t("sBreaks")],
       [s.peakWbgt != null ? Number(s.peakWbgt).toFixed(1) : "—", t("sPeak")],
     ].map(([v, l]) => `<div><b>${v}</b>${l}</div>`).join("");
+    S.lastSummary = { date: new Date().toLocaleDateString("en-IN"), minutes: s.minutes, redMin: s.redMin, breaks: s.breaks,
+      peak: s.peakWbgt != null ? Number(s.peakWbgt).toFixed(1) : "—" };
     $("summary").hidden = false;
     if (s.path.length) {
       const b = new maplibregl.LngLatBounds();
@@ -364,6 +403,14 @@
   $("unwellBtn").onclick = () => unwell().catch((e) => toast(String(e.message || e)));
   $("nudgeClose").onclick = () => { $("nudge").hidden = true; };
   $("summaryClose").onclick = () => { $("summary").hidden = true; };
+  $("summaryShare").onclick = async () => {
+    const text = t("shareText")(S.lastSummary);
+    try {
+      if (navigator.share) return await navigator.share({ title: "HeatShield", text });
+      await navigator.clipboard.writeText(text);
+      toast(t("copied"));
+    } catch (e) { if (e.name !== "AbortError") toast(text); }
+  };
   $("demoRide").onclick = () => runDemo().catch((e) => { $("demoStatus").textContent = String(e); S.demoRunning = false; });
   $("replayToggle").onchange = async (e) => { S.replay = e.target.checked; await refreshGrid(); renderForecast(); };
 

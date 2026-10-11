@@ -13,6 +13,7 @@
   color: var(--ink);
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; } /* .overlay, .btn etc. set display, which would otherwise beat the attribute */
 html, body { margin: 0; height: 100%; background: var(--paper); overflow: hidden; }
 body[lang="hi"] { font-family: "Noto Sans Devanagari", "Archivo", system-ui, sans-serif; }
 #map { position: absolute; inset: 0; }
@@ -61,6 +62,7 @@ body[lang="hi"] { font-family: "Noto Sans Devanagari", "Archivo", system-ui, san
 .btn.primary { background: var(--ink); color: #fff; }
 .btn.danger { border-color: var(--red); color: var(--red); }
 .btn.wide { width: 100%; margin-top: 14px; }
+.btn.wide + .btn.wide { margin-top: 8px; }
 .btn:disabled { opacity: .5; }
 .hint { font-size: 12px; color: var(--muted); margin: 10px 0 0; }
 
@@ -90,7 +92,7 @@ body[lang="hi"] { font-family: "Noto Sans Devanagari", "Archivo", system-ui, san
 .summary-grid b { display: block; font-size: 26px; }
 
 .demo {
-  position: absolute; z-index: 7; right: 12px; top: calc(env(safe-area-inset-top) + 56px);
+  position: absolute; z-index: 7; right: 12px; top: calc(env(safe-area-inset-top) + 92px);
   background: var(--card); border: 2px solid var(--ink); border-radius: 12px; padding: 8px 10px;
   display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 700; max-width: 220px;
 }
